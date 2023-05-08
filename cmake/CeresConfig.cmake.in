@@ -232,7 +232,7 @@ if (CERES_USES_MINIGLOG)
   ceres_message("-- Found Ceres compiled with miniglog substitute "
     "for glog, beware this will likely cause problems if glog is later linked.")
 else(CERES_USES_MINIGLOG)
-  find_package(Glog QUIET CONFIG)
+  find_package(glog QUIET CONFIG)
 
   if (TARGET glog::glog)
     ceres_message(STATUS "Found required Ceres dependency: glog")
