@@ -113,11 +113,13 @@ if (NOT MINIGLOG AND GLOG_FOUND)
   endif()
 endif (NOT MINIGLOG AND GLOG_FOUND)
 
+if(EIGEN3_FOUND)
+    list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES Eigen3::Eigen)
+endif(EIGEN3_FOUND)
+
 if (SUITESPARSE AND SuiteSparse_FOUND)
   # Define version information for use in Solver::FullReport.
   add_definitions(-DCERES_SUITESPARSE_VERSION="${SuiteSparse_VERSION}")
-  list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES SuiteSparse::CHOLMOD
-    SuiteSparse::SPQR)
 endif (SUITESPARSE AND SuiteSparse_FOUND)
 
 if (CXSPARSE AND CXSparse_FOUND)
@@ -148,10 +150,6 @@ if (CUDA_FOUND)
             $<TARGET_FILE:cuda_dense_cholesky_test>)
   endif (BUILD_TESTING)
 endif (CUDA_FOUND)
-
-if (LAPACK_FOUND)
-  list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES ${LAPACK_LIBRARIES})
-endif ()
 
 # Source files that contain private symbols and live in the ceres::internal
 # namespace. The corresponding symbols (classes, functions, etc.) are expected
@@ -283,6 +281,12 @@ endif()
 add_library(ceres $<TARGET_OBJECTS:ceres_internal> ${CERES_LIBRARY_SOURCE})
 
 if(BUILD_SHARED_LIBS)
+  if(CERES_BUILD_TARGET STREQUAL "OSX" OR CERES_BUILD_TARGET STREQUAL "IOS")
+    list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES "-framework Accelerate")
+  endif()
+  if (SUITESPARSE AND SUITESPARSE_FOUND)
+    list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES ${CERES_SHARED_SUITESPARSE_LIBRARIES})
+  endif()
   # While building shared libraries, we additionally require a static variant to
   # be able to access internal symbols which are not intended for general use.
   # Therefore, create a static library from object files and apply all the
@@ -299,6 +303,10 @@ if(BUILD_SHARED_LIBS)
   # used to autogerate export.h. The macro should not be renamed without
   # updating the corresponding generate_export_header invocation.
   target_compile_definitions(ceres_static PUBLIC CERES_STATIC_DEFINE)
+  if (SUITESPARSE AND SUITESPARSE_FOUND)
+    list(APPEND CERES_LIBRARY_DEPENDENCIES ${CERES_STATIC_SUITESPARSE_LIBRARIES})
+  endif()
+  target_link_libraries(ceres PUBLIC ${CERES_LIBRARY_DEPENDENCIES})
 else()
   # In a static library build, not additional access layer is necessary as all
   # symbols are visible.
@@ -322,13 +330,13 @@ target_compile_features(ceres_internal PRIVATE $<TARGET_PROPERTY:ceres,COMPILE_F
 # language standard revision.
 target_compile_features(ceres PUBLIC cxx_std_14)
 
-set_target_properties(ceres PROPERTIES
-  VERSION ${CERES_VERSION}
-  SOVERSION 3)
-
 target_link_libraries(ceres
   PUBLIC ${CERES_LIBRARY_PUBLIC_DEPENDENCIES}
   PRIVATE ${CERES_LIBRARY_PRIVATE_DEPENDENCIES})
+
+target_include_directories(ceres PUBLIC
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 # Add the Ceres headers to its target.
 #

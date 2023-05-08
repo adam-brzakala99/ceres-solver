@@ -187,8 +187,8 @@ if (IOS)
       "requires at least iOS version 7.0")
   endif()
 
-  update_cache_variable(MINIGLOG ON)
-  message(STATUS "Building for iOS: Forcing use of miniglog instead of glog.")
+  update_cache_variable(MINIGLOG OFF)
+  message(STATUS "Building for iOS: Trying to use glog instead of miniglog, as in upstream master branch.")
 
   # Apple claims that the BLAS call dsyrk_ is a private API, and will not allow
   # you to submit to the Apple Store if the symbol is present.
@@ -204,7 +204,7 @@ unset(CERES_COMPILE_OPTIONS)
 
 # Eigen.
 # Eigen delivers Eigen3Config.cmake since v3.3.3
-find_package(Eigen3 3.3 REQUIRED)
+find_package(Eigen3 REQUIRED CONFIG)
 if (Eigen3_FOUND)
   message("-- Found Eigen version ${Eigen3_VERSION}: ${Eigen3_DIR}")
   if (CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64.*|AARCH64.*)" AND
@@ -215,15 +215,9 @@ if (Eigen3_FOUND)
       "Detected version of Eigen is: ${Eigen3_VERSION}.")
   endif()
 
-  if (EIGENSPARSE)
-    message("-- Enabling use of Eigen as a sparse linear algebra library.")
-    list(APPEND CERES_COMPILE_OPTIONS CERES_USE_EIGEN_SPARSE)
-  else (EIGENSPARSE)
-    message("-- Disabling use of Eigen as a sparse linear algebra library.")
-    message("   This does not affect the covariance estimation algorithm ")
-    message("   which can still use the EIGEN_SPARSE_QR algorithm.")
-    add_definitions(-DEIGEN_MPL2_ONLY)
-  endif (EIGENSPARSE)
+  message("-- Enabling use of Eigen as a sparse linear algebra library.")
+  list(APPEND CERES_COMPILE_OPTIONS CERES_USE_EIGEN_SPARSE)
+  add_definitions(-DEIGEN_MPL2_ONLY)
 endif (Eigen3_FOUND)
 
 if (CUDA)
@@ -262,60 +256,13 @@ endif (LAPACK)
 set(RELATIVE_CMAKECONFIG_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/Ceres)
 
 if (SUITESPARSE)
-  # By default, if SuiteSparse and all dependencies are found, Ceres is
-  # built with SuiteSparse support.
-
-  # Check for SuiteSparse and dependencies.
-  find_package(SuiteSparse 4.0 COMPONENTS CHOLMOD SPQR)
-  if (SuiteSparse_FOUND)
-    set(SuiteSparse_DEPENDENCY "find_dependency(SuiteSparse ${SuiteSparse_VERSION})")
-    # By default, if all of SuiteSparse's dependencies are found, Ceres is
-    # built with SuiteSparse support.
-    message("-- Found SuiteSparse ${SuiteSparse_VERSION}, "
-            "building with SuiteSparse.")
-
-    if (SuiteSparse_NO_CMAKE OR NOT SuiteSparse_DIR)
-      install(FILES ${Ceres_SOURCE_DIR}/cmake/FindSuiteSparse.cmake
-                    ${Ceres_SOURCE_DIR}/cmake/FindMETIS.cmake
-              DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
-    endif (SuiteSparse_NO_CMAKE OR NOT SuiteSparse_DIR)
-  else (SuiteSparse_FOUND)
-    # Disable use of SuiteSparse if it cannot be found and continue.
-    message("-- Did not find all SuiteSparse dependencies, disabling "
-      "SuiteSparse support.")
-    update_cache_variable(SUITESPARSE OFF)
-    list(APPEND CERES_COMPILE_OPTIONS CERES_NO_SUITESPARSE)
-  endif (SuiteSparse_FOUND)
+  include(cmake/SuiteSparse.cmake)
 else (SUITESPARSE)
   message("-- Building without SuiteSparse.")
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_SUITESPARSE)
-endif (SUITESPARSE)
-
-# CXSparse.
-if (CXSPARSE)
-  # Don't search with REQUIRED as we can continue without CXSparse.
-  find_package(CXSparse)
-  if (CXSparse_FOUND)
-    set(CXSparse_DEPENDENCY "find_dependency(CXSparse ${CXSparse_VERSION})")
-    # By default, if CXSparse and all dependencies are found, Ceres is
-    # built with CXSparse support.
-    message("-- Found CXSparse version: ${CXSparse_VERSION}, "
-      "building with CXSparse.")
-
-    if (CXSparse_NO_CMAKE OR NOT CXSparse_DIR)
-      install(FILES ${Ceres_SOURCE_DIR}/cmake/FindCXSparse.cmake
-              DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
-    endif (CXSparse_NO_CMAKE OR NOT CXSparse_DIR)
-  else (CXSparse_FOUND)
-    # Disable use of CXSparse if it cannot be found and continue.
-    message("-- Did not find CXSparse, Building without CXSparse.")
-    update_cache_variable(CXSPARSE OFF)
-    list(APPEND CERES_COMPILE_OPTIONS CERES_NO_CXSPARSE)
-  endif (CXSparse_FOUND)
-else (CXSPARSE)
   message("-- Building without CXSparse.")
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_CXSPARSE)
-endif (CXSPARSE)
+endif (SUITESPARSE)
 
 if (ACCELERATESPARSE)
   find_package(AccelerateSparse)
@@ -771,13 +718,6 @@ if (EXPORT_BUILD_DIR)
   file(RELATIVE_PATH INSTALL_ROOT_REL_CONFIG_INSTALL_DIR
     ${Ceres_BINARY_DIR}
     ${Ceres_SOURCE_DIR})
-
-  # Analogously to install(EXPORT ...), export the Ceres target from the build
-  # directory as a package called Ceres into the local CMake package registry.
-  export(TARGETS ceres
-         NAMESPACE Ceres::
-         FILE ${Ceres_BINARY_DIR}/CeresTargets.cmake)
-  export(PACKAGE ${CMAKE_PROJECT_NAME})
 
   # Configure a CeresConfig.cmake file for the export of the Ceres build
   # directory from the template, reflecting the current build options.
