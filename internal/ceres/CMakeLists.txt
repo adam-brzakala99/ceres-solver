@@ -119,15 +119,14 @@ if(EIGEN3_FOUND)
     list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES Eigen3::Eigen)
 endif(EIGEN3_FOUND)
 
-if (SUITESPARSE AND SUITESPARSE_FOUND_FOUND)
+if (SUITESPARSE AND SUITESPARSE_FOUND)
   # Define version information for use in Solver::FullReport.
-  add_definitions(-DCERES_SUITESPARSE_VERSION="${SuiteSparse_VERSION}")
+  add_definitions(-DCERES_SUITESPARSE_VERSION="${SUITESPARSE_VERSION}")
 endif ()
 
 if (CXSPARSE AND CXSPARSE_FOUND)
   # Define version information for use in Solver::FullReport.
-  add_definitions(-DCERES_CXSPARSE_VERSION="${CXSparse_VERSION}")
-  list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES CXSparse::CXSparse)
+  add_definitions(-DCERES_CXSPARSE_VERSION="${CXSPARSE_VERSION}")
 endif ()
 
 if (ACCELERATESPARSE AND AccelerateSparse_FOUND)
