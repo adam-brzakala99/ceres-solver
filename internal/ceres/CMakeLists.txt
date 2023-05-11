@@ -101,19 +101,9 @@ endif()
 find_package(Threads QUIET)
 list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES Threads::Threads)
 
-list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES glog::glog)
-
-if (NOT MINIGLOG AND GLOG_FOUND)
-  list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES ${GLOG_LIBRARIES})
-  if (gflags_FOUND)
-    # If glog & gflags are both found, we assume that glog was built with
-    # gflags, as it is awkward to perform a try_compile() to verify this
-    # when gflags is an imported target (as it is in newer versions).
-    # As glog #includes gflags/gflags.h in glog/logging.h if compiled with
-    # gflags, it is thus a public dependency for Ceres in this case.
-    list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES gflags)
-  endif()
-endif (NOT MINIGLOG AND GLOG_FOUND)
+if (NOT MINIGLOG)
+  list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES glog::glog)
+endif (NOT MINIGLOG)
 
 if(EIGEN3_FOUND)
     list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES Eigen3::Eigen)
@@ -307,7 +297,7 @@ if(BUILD_SHARED_LIBS)
   if (SUITESPARSE AND SUITESPARSE_FOUND)
     list(APPEND CERES_LIBRARY_DEPENDENCIES ${CERES_STATIC_SUITESPARSE_LIBRARIES})
   endif()
-  target_link_libraries(ceres PUBLIC ${CERES_LIBRARY_DEPENDENCIES})
+  target_link_libraries(ceres_static PUBLIC ${CERES_LIBRARY_DEPENDENCIES})
 else()
   # In a static library build, not additional access layer is necessary as all
   # symbols are visible.
