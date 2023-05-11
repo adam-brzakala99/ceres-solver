@@ -405,24 +405,11 @@ else (MINIGLOG)
   unset(MINIGLOG_MAX_LOG_LEVEL CACHE)
   # Don't search with REQUIRED so that configuration continues if not found and
   # we can output an error messages explaining MINIGLOG option.
-  find_package(Glog)
-  if (NOT GLOG_FOUND)
-    message(FATAL_ERROR "Can't find Google Log (glog). Please set either: "
-      "glog_DIR (newer CMake built versions of glog) or GLOG_INCLUDE_DIR & "
-      "GLOG_LIBRARY or enable MINIGLOG option to use minimal glog "
-      "implementation.")
-  endif(NOT GLOG_FOUND)
+  find_package(glog REQUIRED CONFIG)
   # By default, assume gflags was found, updating the message if it was not.
   set(GLOG_GFLAGS_DEPENDENCY_MESSAGE
     " Assuming glog was built with gflags support as gflags was found. "
     "This will make gflags a public dependency of Ceres.")
-  if (NOT gflags_FOUND)
-    set(GLOG_GFLAGS_DEPENDENCY_MESSAGE
-      " Assuming glog was NOT built with gflags support as gflags was "
-      "not found.  If glog was built with gflags, please set the "
-      "gflags search locations such that it can be found by Ceres.  "
-      "Otherwise, Ceres may fail to link due to missing gflags symbols.")
-  endif(NOT gflags_FOUND)
   message("-- Found Google Log (glog)." ${GLOG_GFLAGS_DEPENDENCY_MESSAGE})
 endif (MINIGLOG)
 
