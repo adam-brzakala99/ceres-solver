@@ -294,11 +294,14 @@ if(BUILD_SHARED_LIBS)
   # used to autogerate export.h. The macro should not be renamed without
   # updating the corresponding generate_export_header invocation.
   target_compile_definitions(ceres_static PUBLIC CERES_STATIC_DEFINE)
+else()
+  set(CERES_LIBRARY_DEPENDENCIES
+        ${CERES_LIBRARY_PUBLIC_DEPENDENCIES}
+        ${CERES_LIBRARY_PRIVATE_DEPENDENCIES})
   if (SUITESPARSE AND SUITESPARSE_FOUND)
     list(APPEND CERES_LIBRARY_DEPENDENCIES ${CERES_STATIC_SUITESPARSE_LIBRARIES})
   endif()
-  target_link_libraries(ceres_static PUBLIC ${CERES_LIBRARY_DEPENDENCIES})
-else()
+  target_link_libraries(ceres PUBLIC ${CERES_LIBRARY_DEPENDENCIES})
   # In a static library build, not additional access layer is necessary as all
   # symbols are visible.
   add_library(ceres_static ALIAS ceres)
